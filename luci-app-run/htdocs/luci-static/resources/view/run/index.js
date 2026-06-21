@@ -204,7 +204,7 @@ return view.extend({
 		var runButton = E('button', {
 			class: 'btn cbi-button cbi-button-action',
 			disabled: true,
-			style: 'min-width:140px;padding:8px 32px;',
+			style: 'min-width:140px;margin-left:15px;',
 			click: function (ev) {
 				ev.preventDefault();
 				self.startRun(runButton, state);
@@ -251,7 +251,7 @@ return view.extend({
 		}, [
 			E('h3', [_('upload_title')]),
 			E('p', [state]),
-			E('p', [pickButton, ' ', runButton, cleanButton]),
+			E('p', [pickButton, runButton, cleanButton]),
 			progress,
 			fileInput
 		]);
