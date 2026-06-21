@@ -55,7 +55,15 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          find sdk/bin -type f -name "luci-app-run*.ipk" -exec cp -v {} release/ \;
+          # 从Makefile获取PKG_RELEASE版本号
+          PKG_RELEASE=$(grep '^PKG_RELEASE:=' luci-app-run/Makefile | cut -d'=' -f2)
+          echo "PKG_RELEASE: $PKG_RELEASE"
+          
+          # 复制并重命名ipk文件，添加Release版本号
+          find sdk/bin -type f -name "luci-app-run*.ipk" | while read ipk; do
+            base=$(basename "$ipk" .ipk)
+            cp -v "$ipk" "release/${base}-r${PKG_RELEASE}.ipk"
+          done
           ls -lh release/
 
       - name: Create Release
