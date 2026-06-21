@@ -101,6 +101,11 @@ var getStatus = rpc.declare({
 	method: 'status'
 });
 
+var getVersion = rpc.declare({
+	object: 'luci-app-run',
+	method: 'version'
+});
+
 var readLog = rpc.declare({
 	object: 'luci-app-run',
 	method: 'read_log',
@@ -140,10 +145,29 @@ return view.extend({
 
 	logOffset: 0,
 	currentUploadId: null,
+	appVersion: 'unknown',
 
 	load: function () {
-		return getStatus().catch(function () {
-			return {};
+		var self = this;
+		return getVersion().then(function (res) {
+			if (res && res.version) {
+				self.appVersion = res.version;
+				// 检查版本是否变化，如果变化则强制刷新页面
+				var storedVersion = localStorage.getItem('luci-app-run-version');
+				if (storedVersion && storedVersion !== self.appVersion) {
+					localStorage.setItem('luci-app-run-version', self.appVersion);
+					window.location.reload(true);
+				} else {
+					localStorage.setItem('luci-app-run-version', self.appVersion);
+				}
+			}
+			return getStatus().catch(function () {
+				return {};
+			});
+		}).catch(function () {
+			return getStatus().catch(function () {
+				return {};
+			});
 		});
 	},
 
