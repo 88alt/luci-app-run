@@ -226,7 +226,7 @@ return view.extend({
 
 		var pickButton = E('button', {
 			class: 'cbi-button cbi-button-apply run-btn',
-			style: 'background-color:#333!important;color:white!important;border-color:#333!important',
+			style: 'background:#333!important;background-image:none!important;color:#fff!important;border-color:#333!important',
 			click: function (ev) {
 				ev.preventDefault();
 				fileInput.click();
@@ -235,7 +235,7 @@ return view.extend({
 
 		var ipkButton = E('button', {
 			class: 'cbi-button cbi-button-add run-btn',
-			style: 'margin-left:10px;background-color:#2E7D32!important;color:white!important',
+			style: 'margin-left:10px;background:#2E7D32!important;background-image:none!important;color:#fff!important;border-color:#2E7D32!important',
 			click: function (ev) {
 				ev.preventDefault();
 				ipkInput.click();
@@ -244,7 +244,7 @@ return view.extend({
 
 		var apkButton = E('button', {
 			class: 'cbi-button cbi-button-add run-btn',
-			style: 'margin-left:10px;background-color:#1565C0!important;color:white!important',
+			style:'margin-left:10px;background:#1565C0!important;background-image:none!important;color:#fff!important;border-color:#1565C0!important',
 			click: function (ev) {
 				ev.preventDefault();
 				apkInput.click();
