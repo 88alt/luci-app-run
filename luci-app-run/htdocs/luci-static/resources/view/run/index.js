@@ -22,15 +22,17 @@ const RUN_LANG = (function () {
 const I18N = {
 	zh: {
 		title: "Run安装器",
-		desc: "在路由器上上传并执行 .run 安装包或 .sh 脚本，注意架构务必匹配。",
-		drop_tip: "拖入一个 .run 或 .sh 文件，或从电脑选择。",
-		choose_file: "选择 .run 或 .sh 文件",
+		desc: "在路由器上上传并执行脚本或安装包，注意架构务必匹配。",
+		drop_tip: "拖入文件，或从电脑选择。",
+		choose_file: "选择文件",
+		choose_ipk: "选择 .ipk 包",
+		choose_apk: "选择 .apk 包",
 		execute: "执行",
 		clean_up: "清理",
-		upload_title: "上传安装脚本 (.run / .sh)",
+		upload_title: "上传文件",
 		log_title: "执行日志",
 		clean_done: "临时文件与日志已清理。",
-		only_run: "仅支持 .run 和 .sh 文件。",
+		only_supported: "仅支持 .run、.sh、.ipk 和 .apk 文件。",
 		prepare_upload: "准备上传：%s (%s)",
 		upload_failed: "上传失败。",
 		uploading: "正在上传 %s：%d%%",
@@ -44,15 +46,17 @@ const I18N = {
 	},
 	en: {
 		title: "Run Installer",
-		desc: "Upload and execute .run packages or .sh scripts on this router, ensuring architecture compatibility.",
-		drop_tip: "Drop a .run or .sh file here, or choose one from your computer.",
-		choose_file: "Choose .run or .sh file",
+		desc: "Upload and execute scripts or packages on this router, ensuring architecture compatibility.",
+		drop_tip: "Drop a file here, or choose one from your computer.",
+		choose_file: "Choose file",
+		choose_ipk: "Choose .ipk package",
+		choose_apk: "Choose .apk package",
 		execute: "Execute",
 		clean_up: "Clean up",
-		upload_title: "Upload installer script (.run / .sh)",
+		upload_title: "Upload file",
 		log_title: "Execution log",
 		clean_done: "Temporary files and logs were removed.",
-		only_run: "Only .run and .sh files are accepted.",
+		only_supported: "Only .run, .sh, .ipk and .apk files are accepted.",
 		prepare_upload: "Preparing upload: %s (%s)",
 		upload_failed: "Upload failed.",
 		uploading: "Uploading %s: %d%%",
@@ -106,6 +110,11 @@ var getVersion = rpc.declare({
 	method: 'version'
 });
 
+var getCapabilities = rpc.declare({
+	object: 'luci-app-run',
+	method: 'capabilities'
+});
+
 var readLog = rpc.declare({
 	object: 'luci-app-run',
 	method: 'read_log',
@@ -146,13 +155,13 @@ return view.extend({
 	logOffset: 0,
 	currentUploadId: null,
 	appVersion: 'unknown',
+	capabilities: { opkg: 0, apk: 0 },
 
 	load: function () {
 		var self = this;
 		return getVersion().then(function (res) {
 			if (res && res.version) {
 				self.appVersion = res.version;
-				// 检查版本是否变化，如果变化则强制刷新页面
 				var storedVersion = localStorage.getItem('luci-app-run-version');
 				if (storedVersion && storedVersion !== self.appVersion) {
 					localStorage.setItem('luci-app-run-version', self.appVersion);
@@ -161,12 +170,36 @@ return view.extend({
 					localStorage.setItem('luci-app-run-version', self.appVersion);
 				}
 			}
-			return getStatus().catch(function () {
-				return {};
+			return getCapabilities().then(function (cap) {
+				if (cap) {
+					self.capabilities = {
+						opkg: cap.opkg || 0,
+						apk: cap.apk || 0
+					};
+				}
+				return getStatus().catch(function () {
+					return {};
+				});
+			}).catch(function () {
+				return getStatus().catch(function () {
+					return {};
+				});
 			});
 		}).catch(function () {
-			return getStatus().catch(function () {
-				return {};
+			return getCapabilities().then(function (cap) {
+				if (cap) {
+					self.capabilities = {
+						opkg: cap.opkg || 0,
+						apk: cap.apk || 0
+					};
+				}
+				return getStatus().catch(function () {
+					return {};
+				});
+			}).catch(function () {
+				return getStatus().catch(function () {
+					return {};
+				});
 			});
 		});
 	},
@@ -176,7 +209,19 @@ return view.extend({
 
 		var fileInput = E('input', {
 			'type': 'file',
-			accept: '.run,.sh,application/x-shellscript,application/octet-stream',
+			accept: '.run,.sh,.ipk,.apk,application/x-shellscript,application/octet-stream',
+			style: 'display:none'
+		});
+
+		var ipkInput = E('input', {
+			'type': 'file',
+			accept: '.ipk',
+			style: 'display:none'
+		});
+
+		var apkInput = E('input', {
+			'type': 'file',
+			accept: '.apk',
 			style: 'display:none'
 		});
 
@@ -195,11 +240,34 @@ return view.extend({
 
 		var pickButton = E('button', {
 			class: 'btn cbi-button cbi-button-apply',
+			style: 'background-color:#333;color:white;border-color:#333',
 			click: function (ev) {
 				ev.preventDefault();
 				fileInput.click();
 			}
 		}, [_('choose_file')]);
+
+		var ipkButton = E('button', {
+			class: 'btn cbi-button cbi-button-add',
+			style: self.capabilities.opkg ? 'margin-left:10px;background-color:#2E7D32;color:white' : 'margin-left:10px;background-color:#ccc;color:#666;border-color:#ccc;cursor:not-allowed;opacity:0.6',
+			disabled: !self.capabilities.opkg,
+			click: function (ev) {
+				ev.preventDefault();
+				if (self.capabilities.opkg)
+					ipkInput.click();
+			}
+		}, [_('choose_ipk')]);
+
+		var apkButton = E('button', {
+			class: 'btn cbi-button cbi-button-add',
+			style: self.capabilities.apk ? 'margin-left:10px;background-color:#1565C0;color:white' : 'margin-left:10px;background-color:#ccc;color:#666;border-color:#ccc;cursor:not-allowed;opacity:0.6',
+			disabled: !self.capabilities.apk,
+			click: function (ev) {
+				ev.preventDefault();
+				if (self.capabilities.apk)
+					apkInput.click();
+			}
+		}, [_('choose_apk')]);
 
 		var runButton = E('button', {
 			class: 'btn cbi-button cbi-button-action',
@@ -251,14 +319,27 @@ return view.extend({
 		}, [
 			E('h3', [_('upload_title')]),
 			E('p', [state]),
-			E('p', [pickButton, runButton, cleanButton]),
+			E('p', [pickButton, ipkButton, apkButton]),
+			E('p', { style: 'margin-top:10px' }, [runButton, cleanButton]),
 			progress,
-			fileInput
+			fileInput,
+			ipkInput,
+			apkInput
 		]);
 
 		fileInput.addEventListener('change', function () {
 			if (fileInput.files && fileInput.files.length)
 				self.uploadFile(fileInput.files[0], progress, state, runButton);
+		});
+
+		ipkInput.addEventListener('change', function () {
+			if (ipkInput.files && ipkInput.files.length)
+				self.uploadFile(ipkInput.files[0], progress, state, runButton);
+		});
+
+		apkInput.addEventListener('change', function () {
+			if (apkInput.files && apkInput.files.length)
+				self.uploadFile(apkInput.files[0], progress, state, runButton);
 		});
 
 		poll.add(function () {
@@ -290,9 +371,9 @@ return view.extend({
 	uploadFile: function (file, progress, state, runButton) {
 		var self = this;
 
-		// 支持 .run 和 .sh 文件
-		if (!file.name.match(/\.(run|sh)$/i)) {
-			ui.addNotification(null, E('p', [_('only_run')]), 'danger');
+		// 支持 .run、.sh、.ipk 和 .apk 文件
+		if (!file.name.match(/\.(run|sh|ipk|apk)$/i)) {
+			ui.addNotification(null, E('p', [_('only_supported')]), 'danger');
 			return Promise.reject();
 		}
 
