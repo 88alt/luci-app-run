@@ -89,7 +89,7 @@ return view.extend({
 	logOffset: 0,
 	currentUploadId: null,
 	appVersion: 'unknown',
-	capabilities: { opkg: 0, apk: 0 },
+	capabilities: { opkg: 1, apk: 1 },
 
 	load: function () {
 		var self = this;
@@ -301,7 +301,6 @@ return view.extend({
 	uploadFile: function (file, progress, state, runButton) {
 		var self = this;
 
-		// 支持 .run、.sh、.ipk 和 .apk 文件
 		if (!file.name.match(/\.(run|sh|ipk|apk)$/i)) {
 			ui.addNotification(null, E('p', [_('only_supported')]), 'danger');
 			return Promise.reject();
