@@ -378,7 +378,7 @@ return view.extend({
 			E('h3', [_('upload_title')]),
 			E('p', [state]),
 			E('p', [pickButton, ipkButton, apkButton]),
-			E('p', { style: 'margin-top:10px' }, [runButton, cleanButton]),
+			E('p', { style: 'margin-top:10px' }, [downloadButton, runButton, cleanButton]),
 			progress,
 			fileInput,
 			ipkInput,
@@ -601,13 +601,13 @@ return view.extend({
 								callback(null);
 								return;
 							}
-							
+
 							var filename = url.split('/').pop().split('?')[0];
 							if (!filename.match(/\.run$/i)) {
 								ui.addNotification(null, E('p', [_('only_run')]), 'danger');
 								return;
 							}
-							
+
 							document.body.removeChild(dialog);
 							callback(url);
 						}
